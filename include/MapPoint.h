@@ -24,7 +24,8 @@
 #include"KeyFrame.h"
 #include"Frame.h"
 #include"Map.h"
-
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 #include<opencv2/core/core.hpp>
 #include<mutex>
 
@@ -39,6 +40,7 @@ class Frame;
 class MapPoint
 {
 public:
+    MapPoint();
     MapPoint(const cv::Mat &Pos, KeyFrame* pRefKF, Map* pMap);
     MapPoint(const cv::Mat &Pos,  Map* pMap, Frame* pFrame, const int &idxF);
 
@@ -80,6 +82,9 @@ public:
     float GetMaxDistanceInvariance();
     int PredictScale(const float &currentDist, KeyFrame*pKF);
     int PredictScale(const float &currentDist, Frame* pF);
+
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version);
 
 public:
     long unsigned int mnId;

@@ -28,6 +28,8 @@
 #include "ORBextractor.h"
 #include "Frame.h"
 #include "KeyFrameDatabase.h"
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 #include <mutex>
 
@@ -43,6 +45,7 @@ class KeyFrameDatabase;
 class KeyFrame
 {
 public:
+    KeyFrame();
     KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB);
 
     // Pose functions
@@ -116,6 +119,8 @@ public:
         return pKF1->mnId<pKF2->mnId;
     }
 
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version);
 
     // The following variables are accesed from only 1 thread or never change (no mutex needed).
 public:

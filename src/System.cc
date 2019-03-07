@@ -72,7 +72,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     cout << "Vocabulary loaded!" << endl << endl;
 
     //Create KeyFrame Database
-    mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
+    mpKeyFrameDatabase = new KeyFrameDatabase(mpVocabulary);
 
     //Create the Map
     mpMap = new Map();

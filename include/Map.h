@@ -24,7 +24,8 @@
 #include "MapPoint.h"
 #include "KeyFrame.h"
 #include <set>
-
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 #include <mutex>
 
 
@@ -65,6 +66,9 @@ public:
 
     // This avoid that two points are created simultaneously in separate threads (id conflict)
     std::mutex mMutexPointCreation;
+
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version);
 
 protected:
     std::set<MapPoint*> mspMapPoints;

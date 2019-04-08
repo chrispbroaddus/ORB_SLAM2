@@ -30,7 +30,7 @@ namespace ORB_SLAM2
 {
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-               const bool bUseViewer):mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
+               const bool bUseViewer,  const std::string mapFilename):mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
         mbDeactivateLocalizationMode(false)
 {
     // Output welcome message
@@ -71,11 +71,16 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     }
     cout << "Vocabulary loaded!" << endl << endl;
 
-    //Create KeyFrame Database
-    mpKeyFrameDatabase = new KeyFrameDatabase(mpVocabulary);
+    if(mapFilename.size()) {
+        mbActivateLocalizationMode = true;
+        LoadMap(mapFilename);
+    } else {
+        //Create KeyFrame Database
+        mpKeyFrameDatabase = new KeyFrameDatabase(mpVocabulary);
 
-    //Create the Map
-    mpMap = new Map();
+        //Create the Map
+        mpMap = new Map();
+    }
 
     //Create Drawers. These are used by the Viewer
     mpFrameDrawer = new FrameDrawer(mpMap);
@@ -112,6 +117,10 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     mpLoopCloser->SetTracker(mpTracker);
     mpLoopCloser->SetLocalMapper(mpLocalMapper);
 }
+
+    System::~System() {
+        delete mpViewer;
+    }
 
 cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp)
 {
@@ -487,6 +496,45 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
 {
     unique_lock<mutex> lock(mMutexState);
     return mTrackedKeyPointsUn;
+}
+
+bool System::SaveMap(const string &filename) {
+    std::ofstream os(filename);
+    if(!os.is_open()) {
+        return false;
+    }
+
+    cout << endl << "Saving map" << endl;
+
+    boost::archive::binary_oarchive oa(os, boost::archive::no_header);
+    oa << mpKeyFrameDatabase;
+    oa << mpMap;
+
+    cout << endl << "Map saved to " << filename << endl;
+
+    return true;
+}
+
+bool System::LoadMap(const string &filename) {
+    std::ifstream is(filename);
+    if(!is.is_open()) {
+        return false;
+    }
+
+    cout << endl << "Loading map" << endl;
+
+    boost::archive::binary_iarchive ia(is, boost::archive::no_header);
+    ia >> mpKeyFrameDatabase;
+    ia >> mpMap;
+
+    mpKeyFrameDatabase->initializeFromFileLoading(mpMap, mpVocabulary);
+    mpMap->initializeFromFileLoading(mpKeyFrameDatabase);
+
+    cout << "Map has: " << mpMap->MapPointsInMap() << " points " << endl;
+
+    cout << endl << filename <<" : Map Loaded!" << endl;
+
+    return true;
 }
 
 } //namespace ORB_SLAM

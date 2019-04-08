@@ -152,6 +152,8 @@ mono_tum_EXTERNAL_OBJECTS =
 ../Examples/Monocular/mono_tum: /usr/lib/x86_64-linux-gnu/libIlmImf.so
 ../Examples/Monocular/mono_tum: ../Thirdparty/DBoW2/lib/libDBoW2.so
 ../Examples/Monocular/mono_tum: ../Thirdparty/g2o/lib/libg2o.so
+../Examples/Monocular/mono_tum: /usr/lib/x86_64-linux-gnu/libboost_serialization.so
+../Examples/Monocular/mono_tum: /usr/lib/x86_64-linux-gnu/libboost_system.so
 ../Examples/Monocular/mono_tum: CMakeFiles/mono_tum.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/chris/code/profile_studios/ORB_SLAM2/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable ../Examples/Monocular/mono_tum"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/mono_tum.dir/link.txt --verbose=$(VERBOSE)

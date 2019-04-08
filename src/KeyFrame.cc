@@ -22,6 +22,7 @@
 #include "Converter.h"
 #include "ORBmatcher.h"
 #include<mutex>
+#include "Serialization.h"
 
 namespace ORB_SLAM2
 {
@@ -674,74 +675,280 @@ KeyFrame::KeyFrame() :
         mnMaxY(0) {}
 
 template<class Archive>
-void KeyFrame::serialize(Archive &ar, const unsigned int version) {
-    // no mutex needed vars
-//    ar & nNextId;
-//    ar & mnId;
-//    ar & const_cast<long unsigned int &>(mnFrameId);
-//    ar & const_cast<double &>(mTimeStamp);
-//    // Grid related vars
-//    ar & const_cast<int &>(mnGridCols);
-//    ar & const_cast<int &>(mnGridRows);
-//    ar & const_cast<float &>(mfGridElementWidthInv);
-//    ar & const_cast<float &>(mfGridElementHeightInv);
-//    // Tracking related vars
-//    ar & mnTrackReferenceForFrame & mnFuseTargetForKF;
-//    // LocalMaping related vars
-//    ar & mnBALocalForKF & mnBAFixedForKF;
-//    // KeyFrameDB related vars
-//    ar & mnLoopQuery & mnLoopWords & mLoopScore & mnRelocQuery & mnRelocWords & mRelocScore;
-//    // LoopClosing related vars
-//    ar & mTcwGBA & mTcwBefGBA & mnBAGlobalForKF;
-//    // calibration parameters
-//    ar & const_cast<float &>(fx) & const_cast<float &>(fy) & const_cast<float &>(cx) & const_cast<float &>(cy);
-//    ar & const_cast<float &>(invfx) & const_cast<float &>(invfy) & const_cast<float &>(mbf);
-//    ar & const_cast<float &>(mb) & const_cast<float &>(mThDepth);
-//    // Number of KeyPoints;
-//    ar & const_cast<int &>(N);
-//    // KeyPoints, stereo coordinate and descriptors
-//    ar & const_cast<std::vector<cv::KeyPoint> &>(mvKeys);
-//    ar & const_cast<std::vector<cv::KeyPoint> &>(mvKeysUn);
-//    ar & const_cast<std::vector<float> &>(mvuRight);
-//    ar & const_cast<std::vector<float> &>(mvDepth);
-//    ar & const_cast<cv::Mat &>(mDescriptors);
-//    // Bow
-//    ar & mBowVec & mFeatVec;
-//    // Pose relative to parent
-//    ar & mTcp;
-//    // Scale related
-//    ar & const_cast<int &>(mnScaleLevels) & const_cast<float &>(mfScaleFactor) & const_cast<float &>(mfLogScaleFactor);
-//    ar & const_cast<std::vector<float> &>(mvScaleFactors) & const_cast<std::vector<float> &>(mvLevelSigma2) & const_cast<std::vector<float> &>(mvInvLevelSigma2);
-//    // Image bounds and calibration
-//    ar & const_cast<int &>(mnMinX) & const_cast<int &>(mnMinY) & const_cast<int &>(mnMaxX) & const_cast<int &>(mnMaxY);
-//    ar & const_cast<cv::Mat &>(mK);
-//
-//    // mutex needed vars, but don't lock mutex in the save/load procedure
-//    {
-//        unique_lock<mutex> lock_pose(mMutexPose);
-//        ar & Tcw & Twc & Ow & Cw;
-//    }
-//    {
-//        unique_lock<mutex> lock_feature(mMutexFeatures);
-//        ar & mvpMapPoints; // hope boost deal with the pointer graph well
-//    }
-//    // BoW
-//    ar & mpKeyFrameDB;
-//    // mpORBvocabulary restore elsewhere(see SetORBvocab)
-//    {
-//        // Grid related
-//        unique_lock<mutex> lock_connection(mMutexConnections);
-//        ar & mGrid & mConnectedKeyFrameWeights & mvpOrderedConnectedKeyFrames & mvOrderedWeights;
-//        // Spanning Tree and Loop Edges
-//        ar & mbFirstConnection & mpParent & mspChildrens & mspLoopEdges;
-//        // Bad flags
-//        ar & mbNotErase & mbToBeErased & mbBad & mHalfBaseline;
-//    }
-//    // Map Points
-//    ar & mpMap;
-    // don't save mutex
+void KeyFrame::save(Archive &ar, const unsigned int version) const {
+    ar & nNextId;
+    ar & mnId;
+    ar & const_cast<long unsigned int &>(mnFrameId);
+    ar & const_cast<double &>(mTimeStamp);
+    // Grid related vars
+    ar & const_cast<int &>(mnGridCols);
+    ar & const_cast<int &>(mnGridRows);
+    ar & const_cast<float &>(mfGridElementWidthInv);
+    ar & const_cast<float &>(mfGridElementHeightInv);
+    // Tracking related vars
+    ar & mnTrackReferenceForFrame & mnFuseTargetForKF;
+    // LocalMapping related vars
+    ar & mnBALocalForKF & mnBAFixedForKF;
+    // KeyFrameDB related vars
+    ar & mnLoopQuery & mnLoopWords & mLoopScore & mnRelocQuery & mnRelocWords & mRelocScore;
+    // LoopClosing related vars
+    ar & mTcwGBA & mTcwBefGBA & mnBAGlobalForKF;
+    // calibration parameters
+    ar & const_cast<float &>(fx) & const_cast<float &>(fy) & const_cast<float &>(cx) & const_cast<float &>(cy);
+    ar & const_cast<float &>(invfx) & const_cast<float &>(invfy) & const_cast<float &>(mbf);
+    ar & const_cast<float &>(mb) & const_cast<float &>(mThDepth);
+    // Number of KeyPoints;
+    ar & const_cast<int &>(N);
+    // KeyPoints, stereo coordinate and descriptors
+    ar & const_cast<std::vector<cv::KeyPoint> &>(mvKeys);
+    ar & const_cast<std::vector<cv::KeyPoint> &>(mvKeysUn);
+    ar & const_cast<std::vector<float> &>(mvuRight);
+    ar & const_cast<std::vector<float> &>(mvDepth);
+    ar & const_cast<cv::Mat &>(mDescriptors);
+    // Bow public std::map<WordId, WordValue>
+    ar & static_cast<std::map<DBoW2::WordId, DBoW2::WordValue> &>(mBowVec);
+    ar & static_cast<std::map<DBoW2::NodeId, std::vector<unsigned int>> &>(mFeatVec);
+    // Pose relative to parent
+    ar & mTcp;
+    // Scale related
+    ar & const_cast<int &>(mnScaleLevels) & const_cast<float &>(mfScaleFactor) & const_cast<float &>(mfLogScaleFactor);
+    ar & const_cast<std::vector<float> &>(mvScaleFactors) & const_cast<std::vector<float> &>(mvLevelSigma2) & const_cast<std::vector<float> &>(mvInvLevelSigma2);
+    // Image bounds and calibration
+    ar & const_cast<int &>(mnMinX) & const_cast<int &>(mnMinY) & const_cast<int &>(mnMaxX) & const_cast<int &>(mnMaxY);
+    ar & const_cast<cv::Mat &>(mK);
+
+    size_t sz;
+
+    {
+        unique_lock<mutex> lock_pose(mMutexPose);
+        ar & Tcw & Twc & Ow & Cw;
+    }
+    {
+        unique_lock<mutex> lock_feature(mMutexFeatures);
+
+        // mvpMapPoints
+        sz = mvpMapPoints.size();
+        ar & const_cast<size_t &>(sz);
+        for(const auto& it : mvpMapPoints) {
+            if(it) {
+                ar & it->mnId;
+            } else {
+                size_t id = std::numeric_limits<size_t>::max();
+                ar & id;
+            }
+        }
+    }
+
+    // mpORBvocabulary restore elsewhere(see SetORBvocab)
+    {
+        unique_lock<mutex> lock_connection(mMutexConnections);
+        ar & mGrid;
+
+        // mConnectedKeyFrameWeights
+        sz = mConnectedKeyFrameWeights.size();
+        ar & sz;
+        for(const auto& it : mConnectedKeyFrameWeights) {
+            ar & it.first->mnId;
+            ar & it.second;
+        }
+
+        // mvpOrderedConnectedKeyFrames
+        sz = mvpOrderedConnectedKeyFrames.size();
+        ar & sz;
+        for(const auto& it : mvpOrderedConnectedKeyFrames) {
+            ar & it->mnId;
+        }
+        ar & mvOrderedWeights;
+        // Spanning Tree and Loop Edges
+        ar & mbFirstConnection;
+
+        // mpParent
+        if(mpParent) {
+            ar & mpParent->mnId;
+        } else {
+            unsigned long id = std::numeric_limits<unsigned long>::max();
+            ar & id;
+        }
+
+        // mspChildrens
+        sz = mspChildrens.size();
+        ar & sz;
+        for(const auto& it : mspChildrens) {
+            ar & it->mnId;
+        }
+
+        // mspLoopEdges
+        sz = mspLoopEdges.size();
+        ar & sz;
+        for(const auto& it : mspLoopEdges) {
+            ar & it->mnId;
+        }
+
+        // Bad flags
+        ar & mbNotErase;
+        ar & mbToBeErased;
+        ar & mbBad;
+        ar & mHalfBaseline;
+    }
 }
-template void KeyFrame::serialize(boost::archive::binary_iarchive&, const unsigned int);
-template void KeyFrame::serialize(boost::archive::binary_oarchive&, const unsigned int);
+
+template<class Archive>
+void KeyFrame::load(Archive &ar, const unsigned int version) {
+    ar & nNextId;
+    ar & mnId;
+    ar & const_cast<long unsigned int &>(mnFrameId);
+    ar & const_cast<double &>(mTimeStamp);
+    // Grid related vars
+    ar & const_cast<int &>(mnGridCols);
+    ar & const_cast<int &>(mnGridRows);
+    ar & const_cast<float &>(mfGridElementWidthInv);
+    ar & const_cast<float &>(mfGridElementHeightInv);
+    // Tracking related vars
+    ar & mnTrackReferenceForFrame & mnFuseTargetForKF;
+    // LocalMapping related vars
+    ar & mnBALocalForKF & mnBAFixedForKF;
+    // KeyFrameDB related vars
+    ar & mnLoopQuery & mnLoopWords & mLoopScore & mnRelocQuery & mnRelocWords & mRelocScore;
+    // LoopClosing related vars
+    ar & mTcwGBA & mTcwBefGBA & mnBAGlobalForKF;
+    // calibration parameters
+    ar & const_cast<float &>(fx) & const_cast<float &>(fy) & const_cast<float &>(cx) & const_cast<float &>(cy);
+    ar & const_cast<float &>(invfx) & const_cast<float &>(invfy) & const_cast<float &>(mbf);
+    ar & const_cast<float &>(mb) & const_cast<float &>(mThDepth);
+    // Number of KeyPoints;
+    ar & const_cast<int &>(N);
+    // KeyPoints, stereo coordinate and descriptors
+    ar & const_cast<std::vector<cv::KeyPoint> &>(mvKeys);
+    ar & const_cast<std::vector<cv::KeyPoint> &>(mvKeysUn);
+    ar & const_cast<std::vector<float> &>(mvuRight);
+    ar & const_cast<std::vector<float> &>(mvDepth);
+    ar & const_cast<cv::Mat &>(mDescriptors);
+    // Bow public std::map<WordId, WordValue>
+    ar & static_cast<std::map<DBoW2::WordId, DBoW2::WordValue> &>(mBowVec);
+    ar & static_cast<std::map<DBoW2::NodeId, std::vector<unsigned int>> &>(mFeatVec);
+    // Pose relative to parent
+    ar & mTcp;
+    // Scale related
+    ar & const_cast<int &>(mnScaleLevels) & const_cast<float &>(mfScaleFactor) & const_cast<float &>(mfLogScaleFactor);
+    ar & const_cast<std::vector<float> &>(mvScaleFactors) & const_cast<std::vector<float> &>(mvLevelSigma2) & const_cast<std::vector<float> &>(mvInvLevelSigma2);
+    // Image bounds and calibration
+    ar & const_cast<int &>(mnMinX) & const_cast<int &>(mnMinY) & const_cast<int &>(mnMaxX) & const_cast<int &>(mnMaxY);
+    ar & const_cast<cv::Mat &>(mK);
+
+    size_t sz;
+
+    {
+        unique_lock<mutex> lock_pose(mMutexPose);
+        ar & Tcw & Twc & Ow & Cw;
+    }
+    {
+        unique_lock<mutex> lock_feature(mMutexFeatures);
+        ar & sz;
+        for(size_t i  = 0; i < sz; i++) {
+            long unsigned int id;
+            ar & id;
+            mvpMapPointsIds.push_back(id);
+        }
+    }
+
+    {
+        unique_lock<mutex> lock_connection(mMutexConnections);
+        ar & mGrid;
+
+        // mConnectedKeyFrameWeights
+        ar & sz;
+        for(size_t i = 0; i < sz; i++) {
+            long unsigned int id;
+            ar & id;
+            int weight;
+            ar & weight;
+            mConnectedKeyFrameWeightsIds[id] = weight;
+        }
+
+        // mvpOrderedConnectedKeyFrames
+        ar & sz;
+        for(size_t i = 0; i < sz; i++) {
+            long unsigned int id;
+            ar & id;
+            mvpOrderedConnectedKeyFramesIds.push_back(id);
+        }
+
+        ar & mvOrderedWeights;
+        // Spanning Tree and Loop Edges
+        ar & mbFirstConnection;
+
+        // mpParent
+        {
+            long unsigned int id;
+            ar & id;
+            mpParentId = id;
+        }
+
+        // mspChildrens
+        ar & sz;
+        for(size_t i = 0; i < sz; i++) {
+            long unsigned int id;
+            ar & id;
+            mspChildrensIds.insert(id);
+        }
+
+        // mspLoopEdges
+        ar & sz;
+        for(size_t i = 0; i < sz; i++) {
+            long unsigned int id;
+            ar & id;
+            mspLoopEdgesIds.insert(id);
+        }
+
+        // Bad flags
+        ar & mbNotErase;
+        ar & mbToBeErased;
+        ar & mbBad;
+        ar & mHalfBaseline;
+    }
+}
+
+void KeyFrame::initializeFromFileLoading(KeyFrameDatabase* keyframeDb, Map* map) {
+    for(const auto& it : mvpMapPointsIds) {
+        if(it == std::numeric_limits<size_t>::max()) {
+            mvpMapPoints.push_back(static_cast<MapPoint*>(NULL));
+        } else {
+            auto mp = map->GetMapPoint(it);
+            mvpMapPoints.push_back(mp);
+        }
+    }
+
+    for(const auto& it : mspChildrensIds) {
+        auto keyframe = keyframeDb->get(it);
+        mspChildrens.insert(keyframe);
+    }
+
+    for(const auto& it : mspLoopEdgesIds) {
+        auto keyframe = keyframeDb->get(it);
+        mspLoopEdges.insert(keyframe);
+    }
+
+    for(const auto& it : mConnectedKeyFrameWeightsIds) {
+        auto keyframe = keyframeDb->get(it.first);
+        mConnectedKeyFrameWeights[keyframe] = it.second;
+    }
+
+    for(const auto& it : mvpOrderedConnectedKeyFramesIds) {
+        auto keyframe = keyframeDb->get(it);
+        mvpOrderedConnectedKeyFrames.push_back(keyframe);
+    }
+
+    mpParent = keyframeDb->get(mpParentId);
+
+    mpKeyFrameDB = keyframeDb;
+    mpMap = map;
+}
+
+template void KeyFrame::save<boost::archive::binary_oarchive>(
+        boost::archive::binary_oarchive &,
+        const unsigned int) const;
+template void KeyFrame::load<boost::archive::binary_iarchive>(
+        boost::archive::binary_iarchive &,
+        const unsigned int);
 
 } //namespace ORB_SLAM

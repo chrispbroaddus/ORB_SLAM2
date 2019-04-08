@@ -152,6 +152,8 @@ stereo_kitti_EXTERNAL_OBJECTS =
 ../Examples/Stereo/stereo_kitti: /usr/lib/x86_64-linux-gnu/libIlmImf.so
 ../Examples/Stereo/stereo_kitti: ../Thirdparty/DBoW2/lib/libDBoW2.so
 ../Examples/Stereo/stereo_kitti: ../Thirdparty/g2o/lib/libg2o.so
+../Examples/Stereo/stereo_kitti: /usr/lib/x86_64-linux-gnu/libboost_serialization.so
+../Examples/Stereo/stereo_kitti: /usr/lib/x86_64-linux-gnu/libboost_system.so
 ../Examples/Stereo/stereo_kitti: CMakeFiles/stereo_kitti.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/chris/code/profile_studios/ORB_SLAM2/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable ../Examples/Stereo/stereo_kitti"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/stereo_kitti.dir/link.txt --verbose=$(VERBOSE)

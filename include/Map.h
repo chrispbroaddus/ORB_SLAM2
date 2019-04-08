@@ -35,6 +35,7 @@ namespace ORB_SLAM2
 
 class MapPoint;
 class KeyFrame;
+class KeyFrameDatabase;
 
 class Map
 {
@@ -43,6 +44,7 @@ public:
 
     void AddKeyFrame(KeyFrame* pKF);
     void AddMapPoint(MapPoint* pMP);
+    MapPoint* GetMapPoint(long unsigned int id);
     void EraseMapPoint(MapPoint* pMP);
     void EraseKeyFrame(KeyFrame* pKF);
     void SetReferenceMapPoints(const std::vector<MapPoint*> &vpMPs);
@@ -69,6 +71,8 @@ public:
 
     template<class Archive>
     void serialize(Archive &ar, const unsigned int version);
+
+    void initializeFromFileLoading(KeyFrameDatabase* keyframeDb);
 
 protected:
     std::set<MapPoint*> mspMapPoints;

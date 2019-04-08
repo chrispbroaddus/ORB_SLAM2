@@ -423,7 +423,7 @@ MapPoint::MapPoint():
         mpReplaced(static_cast<MapPoint*>(NULL)), mfMinDistance(0), mfMaxDistance(0), mbTrackInView(false)
 {}
 template<class Archive>
-void MapPoint::serialize(Archive &ar, const unsigned int version)
+void MapPoint::save(Archive &ar, const unsigned int version) const
 {
     ar & mnId & nNextId & mnFirstKFid & mnFirstFrame & nObs;
     // Tracking related vars
@@ -438,21 +438,116 @@ void MapPoint::serialize(Archive &ar, const unsigned int version)
     // Local Mapping related vars
     ar & mnBALocalForKF & mnFuseCandidateForKF;
     // Loop Closing related vars
-    ar & const_cast<cv::Mat &> (mPosGBA);
-//    ar & mnLoopPointForKF & mnCorrectedByKF & mnCorrectedReference & mPosGBA & mnBAGlobalForKF;
+    ar & mnLoopPointForKF & mnCorrectedByKF & mnCorrectedReference & mPosGBA & mnBAGlobalForKF;
     // don't save the mutex
-//    ar & mWorldPos;
-//    ar & mObservations;
-//    ar & mNormalVector;
-//    ar & mDescriptor;
-//    ar & mpRefKF;
-//    ar & mnVisible & mnFound;
-//    ar & mbBad & mpReplaced;
-//    ar & mfMinDistance & mfMaxDistance;
-//    ar & mpMap;
-    // don't save the mutex
+    ar & mWorldPos;
+
+    size_t sz;
+
+    // mObservations
+    sz  = mObservations.size();
+    ar & sz;
+    for(const auto& it : mObservations) {
+        ar & it.first->mnId;
+        ar & it.second;
+    }
+
+    ar & mNormalVector;
+    ar & mDescriptor;
+
+    // mpRefKF
+    if(mpRefKF) {
+        ar & mpRefKF->mnId;
+    } else {
+        unsigned long id = std::numeric_limits<unsigned long>::max();
+        ar & id;
+    }
+
+    ar & mnVisible & mnFound;
+    ar & mbBad;
+
+    // mpReplaced
+
+    if(mpReplaced) {
+        ar & mpReplaced->mnId;
+    } else {
+        unsigned long id = std::numeric_limits<unsigned long>::max();
+        ar & id;
+    }
+
+    ar & mfMinDistance & mfMaxDistance;
 }
-template void MapPoint::serialize(boost::archive::binary_iarchive&, const unsigned int);
-template void MapPoint::serialize(boost::archive::binary_oarchive&, const unsigned int);
+
+template<class Archive>
+void MapPoint::load(Archive & ar, const unsigned int version) {
+    ar & mnId & nNextId & mnFirstKFid & mnFirstFrame & nObs;
+    // Tracking related vars
+    ar & mTrackProjX;
+    ar & mTrackProjY;
+    ar & mTrackProjXR;
+    ar & mbTrackInView;
+    ar & mnTrackScaleLevel;
+    ar & mTrackViewCos;
+    ar & mnTrackReferenceForFrame;
+    ar & mnLastFrameSeen;
+    // Local Mapping related vars
+    ar & mnBALocalForKF & mnFuseCandidateForKF;
+    // Loop Closing related vars
+    ar & mnLoopPointForKF & mnCorrectedByKF & mnCorrectedReference & mPosGBA & mnBAGlobalForKF;
+    // don't save the mutex
+    ar & mWorldPos;
+
+    size_t sz;
+
+    // mObservations
+    ar & sz;
+    for(size_t i = 0; i < sz; i++) {
+        long unsigned int id;
+        ar & id;
+        size_t idx;
+        ar & idx;
+        mObservationsIds[id] = idx;
+    }
+
+    ar & mNormalVector;
+    ar & mDescriptor;
+
+    // mpRefKF
+    {
+        long unsigned int id;
+        ar & id;
+        mpRefKFId = id;
+    }
+
+    ar & mnVisible & mnFound;
+    ar & mbBad;
+
+    // mpReplaced
+    {
+        long unsigned int id;
+        ar & id;
+        mpReplacedId = id;
+    }
+
+    ar & mfMinDistance & mfMaxDistance;
+}
+
+void MapPoint::initializeFromFileLoading(KeyFrameDatabase* keyframeDb, Map* map) {
+    for(const auto& it : mObservationsIds) {
+        mObservations[keyframeDb->get(it.first)] = it.second;
+    }
+
+    mpRefKF = keyframeDb->get(mpRefKFId);
+    mpReplaced = map->GetMapPoint(mpReplacedId);
+
+    mpMap = map;
+}
+
+template void MapPoint::save<boost::archive::binary_oarchive>(
+        boost::archive::binary_oarchive &,
+        const unsigned int) const;
+template void MapPoint::load<boost::archive::binary_iarchive>(
+        boost::archive::binary_iarchive &,
+        const unsigned int);
 
 } //namespace ORB_SLAM

@@ -21,6 +21,7 @@
 #include "Map.h"
 
 #include<mutex>
+#include "Serialization.h"
 
 namespace ORB_SLAM2
 {
@@ -41,6 +42,16 @@ void Map::AddMapPoint(MapPoint *pMP)
 {
     unique_lock<mutex> lock(mMutexMap);
     mspMapPoints.insert(pMP);
+}
+
+MapPoint* Map::GetMapPoint(long unsigned int id) {
+    unique_lock<mutex> lock(mMutexMap);
+    for(auto& it : mspMapPoints) {
+        if(it->mnId == id) {
+            return it;
+        }
+    }
+    return NULL;
 }
 
 void Map::EraseMapPoint(MapPoint *pMP)
@@ -129,5 +140,24 @@ void Map::clear()
     mvpReferenceMapPoints.clear();
     mvpKeyFrameOrigins.clear();
 }
+
+template<class Archive>
+void Map::serialize(Archive &ar, const unsigned int version)
+{
+    ar & mspMapPoints;
+    ar & mvpKeyFrameOrigins;
+//    ar & mspKeyFrames;
+//    ar & mvpReferenceMapPoints;
+//    ar & mnMaxKFid & mnBigChangeIdx;
+}
+
+void Map::initializeFromFileLoading(KeyFrameDatabase* keyframeDb) {
+    for(auto& it : mspMapPoints) {
+        it->initializeFromFileLoading(keyframeDb, this);
+    }
+}
+
+template void Map::serialize(boost::archive::binary_iarchive&, const unsigned int);
+template void Map::serialize(boost::archive::binary_oarchive&, const unsigned int);
 
 } //namespace ORB_SLAM

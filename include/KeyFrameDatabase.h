@@ -28,7 +28,7 @@
 #include "KeyFrame.h"
 #include "Frame.h"
 #include "ORBVocabulary.h"
-
+#include "Map.h"
 #include<mutex>
 
 
@@ -37,15 +37,19 @@ namespace ORB_SLAM2
 
 class KeyFrame;
 class Frame;
+class Map;
 
 
 class KeyFrameDatabase
 {
 public:
 
-    KeyFrameDatabase(const ORBVocabulary &voc);
+    KeyFrameDatabase();
+    KeyFrameDatabase(const ORBVocabulary* voc);
 
    void add(KeyFrame* pKF);
+
+    KeyFrame* get(long unsigned int  id);
 
    void erase(KeyFrame* pKF);
 
@@ -56,6 +60,13 @@ public:
 
    // Relocalization
    std::vector<KeyFrame*> DetectRelocalizationCandidates(Frame* F);
+
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version);
+
+    void initializeFromFileLoading(Map* map, const ORBVocabulary* voc);
+
+    std::mutex& getMutex() { return mMutex; }
 
 protected:
 

@@ -24,7 +24,7 @@
 #include"KeyFrame.h"
 #include"Frame.h"
 #include"Map.h"
-
+#include "Serialization.h"
 #include<opencv2/core/core.hpp>
 #include<mutex>
 
@@ -34,11 +34,12 @@ namespace ORB_SLAM2
 class KeyFrame;
 class Map;
 class Frame;
-
+class KeyFrameDatabase;
 
 class MapPoint
 {
 public:
+    MapPoint();
     MapPoint(const cv::Mat &Pos, KeyFrame* pRefKF, Map* pMap);
     MapPoint(const cv::Mat &Pos,  Map* pMap, Frame* pFrame, const int &idxF);
 
@@ -80,6 +81,16 @@ public:
     float GetMaxDistanceInvariance();
     int PredictScale(const float &currentDist, KeyFrame*pKF);
     int PredictScale(const float &currentDist, Frame* pF);
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    { boost::serialization::split_member(ar, *this, version); }
+    template<class Archive>
+    void save(Archive & ar, const unsigned int version) const;
+    template<class Archive>
+    void load(Archive & ar, const unsigned int version);
+
+    void initializeFromFileLoading(KeyFrameDatabase* keyframeDb, Map* map);
 
 public:
     long unsigned int mnId;
@@ -145,6 +156,10 @@ protected:
 
      std::mutex mMutexPos;
      std::mutex mMutexFeatures;
+
+     std::map<long unsigned int, size_t> mObservationsIds;
+     long unsigned int mpRefKFId;
+     long unsigned int mpReplacedId;
 };
 
 } //namespace ORB_SLAM

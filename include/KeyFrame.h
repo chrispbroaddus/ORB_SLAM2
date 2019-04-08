@@ -28,6 +28,8 @@
 #include "ORBextractor.h"
 #include "Frame.h"
 #include "KeyFrameDatabase.h"
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 #include <mutex>
 
@@ -43,6 +45,7 @@ class KeyFrameDatabase;
 class KeyFrame
 {
 public:
+    KeyFrame();
     KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB);
 
     // Pose functions
@@ -116,6 +119,15 @@ public:
         return pKF1->mnId<pKF2->mnId;
     }
 
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    { boost::serialization::split_member(ar, *this, version); }
+    template<class Archive>
+    void save(Archive & ar, const unsigned int version) const;
+    template<class Archive>
+    void load(Archive & ar, const unsigned int version);
+
+    void initializeFromFileLoading(KeyFrameDatabase* keyframeDb, Map* map);
 
     // The following variables are accesed from only 1 thread or never change (no mutex needed).
 public:
@@ -167,8 +179,8 @@ public:
     const cv::Mat mDescriptors;
 
     //BoW
-    DBoW2::BowVector mBowVec;
-    DBoW2::FeatureVector mFeatVec;
+    mutable DBoW2::BowVector mBowVec;
+    mutable DBoW2::FeatureVector mFeatVec;
 
     // Pose relative to parent (this is computed when bad flag is activated)
     cv::Mat mTcp;
@@ -228,9 +240,16 @@ protected:
 
     Map* mpMap;
 
-    std::mutex mMutexPose;
-    std::mutex mMutexConnections;
-    std::mutex mMutexFeatures;
+    mutable std::mutex mMutexPose;
+    mutable std::mutex mMutexConnections;
+    mutable std::mutex mMutexFeatures;
+
+    std::vector<long unsigned int> mvpMapPointsIds;
+    std::set<long unsigned int> mspChildrensIds;
+    std::set<long unsigned int> mspLoopEdgesIds;
+    std::map<long unsigned int,int> mConnectedKeyFrameWeightsIds;
+    std::vector<long unsigned int> mvpOrderedConnectedKeyFramesIds;
+    long unsigned int mpParentId;
 };
 
 } //namespace ORB_SLAM

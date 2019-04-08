@@ -22,6 +22,7 @@
 
 #include "KeyFrame.h"
 #include "Thirdparty/DBoW2/DBoW2/BowVector.h"
+#include "Serialization.h"
 
 #include<mutex>
 
@@ -30,19 +31,32 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-KeyFrameDatabase::KeyFrameDatabase (const ORBVocabulary &voc):
-    mpVoc(&voc)
+KeyFrameDatabase::KeyFrameDatabase() : mpVoc(0) {}
+
+KeyFrameDatabase::KeyFrameDatabase (const ORBVocabulary* voc):
+    mpVoc(voc)
 {
-    mvInvertedFile.resize(voc.size());
+    mvInvertedFile.resize(voc->size());
 }
 
 
 void KeyFrameDatabase::add(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutex);
-
     for(DBoW2::BowVector::const_iterator vit= pKF->mBowVec.begin(), vend=pKF->mBowVec.end(); vit!=vend; vit++)
         mvInvertedFile[vit->first].push_back(pKF);
+}
+
+KeyFrame* KeyFrameDatabase::get(long unsigned int id) {
+    unique_lock<mutex> lock(mMutex);
+    for(auto& it : mvInvertedFile) {
+        for(auto& keyframe : it) {
+            if(keyframe->mnId == id) {
+                return keyframe;
+            }
+        }
+    }
+    return NULL;
 }
 
 void KeyFrameDatabase::erase(KeyFrame* pKF)
@@ -306,6 +320,25 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
     }
 
     return vpRelocCandidates;
+}
+
+
+template<class Archive>
+void KeyFrameDatabase::serialize(Archive &ar, const unsigned int version)
+{
+    unique_lock<mutex> lock(mMutex);
+    ar & mvInvertedFile;
+}
+template void KeyFrameDatabase::serialize(boost::archive::binary_iarchive&, const unsigned int);
+template void KeyFrameDatabase::serialize(boost::archive::binary_oarchive&, const unsigned int);
+
+void KeyFrameDatabase::initializeFromFileLoading(Map* map, const ORBVocabulary* voc) {
+    mpVoc = voc;
+    for(auto& vit : mvInvertedFile) {
+        for(auto& lit : vit) {
+            lit->initializeFromFileLoading(this, map);
+        }
+    }
 }
 
 } //namespace ORB_SLAM

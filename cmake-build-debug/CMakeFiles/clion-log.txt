@@ -1,0 +1,10 @@
+/home/chris/clion-2017.3.4/bin/cmake/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/chris/code/profile_studios/ORB_SLAM2
+Build type: Debug
+-- Using flag -std=c++11.
+-- Boost version: 1.58.0
+-- Found the following Boost libraries:
+--   serialization
+--   system
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/chris/code/profile_studios/ORB_SLAM2/cmake-build-debug
